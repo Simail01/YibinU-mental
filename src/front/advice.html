@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能心理咨询 - 大学生心理健康智能分析系统</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="uuid_manager.js"></script>
+    <script src="config.js"></script>
+    <style>
+        .chat-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr 280px;
+            gap: 20px;
+            height: calc(100vh - 80px);
+            margin-top: 20px;
+        }
+        .sidebar {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-main {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .chat-history {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            position: relative;
+        }
+        .message.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.system {
+            align-self: flex-start;
+            background: var(--bg-main);
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .message.system.thinking {
+            font-style: italic;
+            color: var(--text-light);
+        }
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+        .chat-input-box {
+            display: flex;
+            gap: 12px;
+        }
+        textarea.chat-input {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            resize: none;
+            height: 50px;
+            font-family: inherit;
+            background: var(--bg-main);
+            color: var(--text-main);
+        }
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+        .send-btn:hover { background: var(--primary-dark); }
+        .send-btn:disabled { background: var(--text-light); cursor: not-allowed; }
+        .session-item {
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .session-item:hover { background: var(--bg-main); }
+        .session-item.active { 
+            background: var(--primary); 
+            color: white; 
+            border-color: var(--primary);
+        }
+        .session-item.active .session-meta { color: rgba(255,255,255,0.8); }
+        .session-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .session-meta {
+            font-size: 0.7rem;
+            color: var(--text-light);
+        }
+        .session-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .session-btn {
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            cursor: pointer;
+        }
+        .session-item.active .session-btn {
+            border-color: rgba(255,255,255,0.3);
+            color: white;
+        }
+        .session-btn:hover { background: rgba(0,0,0,0.1); }
+        .session-btn.delete { color: #ef4444; }
+        .new-session-btn {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .new-session-btn:hover { background: var(--primary-dark); }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .empty-chat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-light);
+        }
+        .empty-chat-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        .kb-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        .kb-item:hover { background: var(--bg-main); }
+        .kb-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+            justify-content: flex-end;
+        }
+        .kb-btn {
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+        }
+        .kb-btn:hover { background: var(--bg-main); }
+        .kb-btn.delete { color: #ef4444; border-color: #fecaca; }
+        .kb-btn.delete:hover { background: #fef2f2; }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.hidden { display: none; }
+        .modal-content {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+        }
+        @media (max-width: 1200px) {
+            .chat-layout { grid-template-columns: 220px 1fr; }
+            .sidebar.right { display: none; }
+        }
+        @media (max-width: 768px) {
+            .chat-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-logo">YibinU 心理健康</div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">首页</a>
+                <a href="advice.html" class="nav-link nav-link-active">智能咨询</a>
+                <a href="scl90.html" class="nav-link">专业自评</a>
+                <button class="theme-toggle" id="theme-toggle" title="切换主题">🌓</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 1400px; padding: 0 20px;">
+        <div class="chat-layout">
+            <!-- 左侧：对话列表 -->
+            <div class="sidebar left">
+                <button class="new-session-btn" onclick="createNewSession()">+ 开启新对话</button>
+                <h3 style="margin-bottom: 12px; font-size: 1rem;">💬 对话列表</h3>
+                <div id="session-list" style="flex: 1; overflow-y: auto;">
+                    <div class="text-center text-muted" style="padding: 20px;">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 中间：对话窗口 -->
+            <div class="chat-main">
+                <div id="chat-history" class="chat-history">
+                    <div class="empty-chat" id="empty-chat">
+                        <div class="empty-chat-icon">💭</div>
+                        <p>选择一个对话或开启新对话</p>
+                        <p style="font-size: 0.9rem;">开始您的心理咨询之旅</p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="deep-think-toggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span>开启深度思考模式 🧠</span>
+                    </div>
+                    <div class="chat-input-box">
+                        <textarea id="chat-input" class="chat-input" placeholder="请输入你想说的话..." onkeydown="if(event.keyCode==13 && !event.shiftKey) sendMessage()"></textarea>
+                        <button id="send-btn" class="send-btn" onclick="sendMessage()">➤</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：知识库 -->
+            <div class="sidebar right">
+                <h3 style="margin-bottom: 12px; font-size: 1rem;">📚 我的知识库</h3>
+                <div style="margin-bottom: 12px;">
+                    <button class="btn secondary sm" onclick="showAddKbModal()" style="width: 100%;">+ 添加个人笔记</button>
+                </div>
+                <div id="kb-list" style="flex: 1; overflow-y: auto;">
+                    <div class="text-center text-muted" style="padding: 20px;">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加知识库弹窗 -->
+    <div id="kb-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>添加个人笔记</h3>
+            <input type="text" id="kb-title" placeholder="标题" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; background: var(--bg-main); color: var(--text-main);">
+            <textarea id="kb-content" placeholder="内容（如：今天心情不错，因为...）" rows="5" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; background: var(--bg-main); color: var(--text-main);"></textarea>
+            <div style="text-align: right; gap: 10px; display: flex; justify-content: flex-end;">
+                <button class="btn secondary" onclick="closeKbModal()">取消</button>
+                <button class="btn primary" onclick="addKnowledge()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看知识库弹窗 -->
+    <div id="kb-view-modal" class="modal hidden">
+        <div class="modal-content" style="width: 500px; max-height: 80vh; display: flex; flex-direction: column;">
+            <h3 id="kb-view-title" style="margin-bottom: 10px;"></h3>
+            <div style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 15px;" id="kb-view-meta"></div>
+            <div id="kb-view-content" style="flex: 1; overflow-y: auto; padding: 10px; background: var(--bg-main); border-radius: 8px; white-space: pre-wrap;"></div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button class="btn primary" onclick="closeKbViewModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let sessions = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark');
+            }
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+
+            loadSessions();
+            loadKnowledgeBase();
+        });
+
+        // ==================== 会话管理 ====================
+        async function loadSessions() {
+            const list = document.getElementById('session-list');
+            try {
+                const data = await window.AppConfig.apiRequest('SESSIONS');
+                if (data.code === 200) {
+                    sessions = data.data || [];
+                    renderSessionList();
+                    if (sessions.length > 0 && !currentSessionId) {
+                        selectSession(sessions[0].session_id);
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = '<div class="text-center text-danger">加载失败</div>';
+            }
+        }
+
+        function renderSessionList() {
+            const list = document.getElementById('session-list');
+            list.innerHTML = '';
+            
+            if (sessions.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted" style="padding: 20px;">暂无对话记录</div>';
+                return;
+            }
+
+            sessions.forEach(session => {
+                const div = document.createElement('div');
+                div.className = `session-item ${currentSessionId === session.session_id ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div class="session-title">${escapeHtml(session.title || '新对话')}</div>
+                    <div class="session-meta">${session.message_count || 0} 条消息 · ${formatDate(session.updated_at)}</div>
+                    <div class="session-actions">
+                        <button class="session-btn delete" onclick="event.stopPropagation(); deleteSession('${session.session_id}')">删除</button>
+                    </div>
+                `;
+                div.onclick = () => selectSession(session.session_id);
+                list.appendChild(div);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = now - date;
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+            return dateStr.substring(0, 10);
+        }
+
+        async function selectSession(sessionId) {
+            currentSessionId = sessionId;
+            renderSessionList();
+            
+            const chatBox = document.getElementById('chat-history');
+            const emptyChat = document.getElementById('empty-chat');
+            
+            try {
+                const data = await window.AppConfig.apiRequest('SESSION_MESSAGES', sessionId);
+                if (data.code === 200) {
+                    chatBox.innerHTML = '';
+                    if (data.data.length === 0) {
+                        emptyChat.style.display = 'flex';
+                        chatBox.appendChild(emptyChat);
+                    } else {
+                        emptyChat.style.display = 'none';
+                        data.data.forEach(msg => {
+                            appendMessage(msg.user_query, 'user');
+                            appendMessage(msg.system_reply, 'system', null, false);
+                        });
+                    }
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function createNewSession() {
+            try {
+                const data = await window.AppConfig.apiRequest('SESSIONS', { method: 'POST' });
+                if (data.code === 200) {
+                    currentSessionId = data.data.session_id;
+                    sessions.unshift({
+                        session_id: currentSessionId,
+                        title: '新对话',
+                        message_count: 0,
+                        updated_at: new Date().toISOString()
+                    });
+                    renderSessionList();
+                    
+                    const chatBox = document.getElementById('chat-history');
+                    const emptyChat = document.getElementById('empty-chat');
+                    chatBox.innerHTML = '';
+                    emptyChat.style.display = 'flex';
+                    chatBox.appendChild(emptyChat);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteSession(sessionId) {
+            if (!confirm('确定要删除这个对话吗？')) return;
+            try {
+                const data = await window.AppConfig.apiRequest('SESSION_DELETE', sessionId, { method: 'DELETE' });
+                if (data.code === 200) {
+                    sessions = sessions.filter(s => s.session_id !== sessionId);
+                    if (currentSessionId === sessionId) {
+                        currentSessionId = null;
+                        const chatBox = document.getElementById('chat-history');
+                        const emptyChat = document.getElementById('empty-chat');
+                        chatBox.innerHTML = '';
+                        emptyChat.style.display = 'flex';
+                        chatBox.appendChild(emptyChat);
+                    }
+                    renderSessionList();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // ==================== 消息发送 ====================
+        async function sendMessage() {
+            if (!currentSessionId) {
+                alert('请先选择或创建一个对话');
+                return;
+            }
+            
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            const deepThink = document.getElementById('deep-think-toggle').checked;
+            if (!text) return;
+
+            const emptyChat = document.getElementById('empty-chat');
+            emptyChat.style.display = 'none';
+
+            appendMessage(text, 'user');
+            input.value = '';
+            
+            const thinkingId = 'thinking-' + Date.now();
+            appendMessage(deepThink ? '正在深度思考中... 🧠' : '正在思考中...', 'system thinking', thinkingId);
+            
+            try {
+                const resData = await window.AppConfig.apiRequest('MENTAL_ANALYSIS', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        text: text,
+                        deep_thinking: deepThink,
+                        session_id: currentSessionId
+                    })
+                });
+                
+                removeMessage(thinkingId);
+                
+                if (resData.code === 200) {
+                    appendMessage(resData.data.advice, 'system', null, true);
+                    if (resData.data.session_id !== currentSessionId) {
+                        currentSessionId = resData.data.session_id;
+                        loadSessions();
+                    }
+                } else {
+                    appendMessage(`出错: ${resData.msg}`, 'system error');
+                }
+            } catch (e) {
+                removeMessage(thinkingId);
+                appendMessage("网络连接失败", 'system error');
+            }
+        }
+
+        function appendMessage(text, type, id = null, animate = false) {
+            const chatBox = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.id = id || ('msg-' + Date.now());
+            
+            chatBox.appendChild(div);
+            
+            if (type.includes('system') && !type.includes('thinking')) {
+                if (animate) {
+                    typewriter(div, text);
+                } else {
+                    renderMarkdown(div, text);
+                }
+            } else {
+                div.textContent = text;
+            }
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div.id;
+        }
+
+        function renderMarkdown(element, text) {
+            if (typeof marked !== 'undefined') {
+                element.innerHTML = marked.parse(text);
+            } else {
+                element.innerHTML = text.replace(/\n/g, '<br>');
+            }
+        }
+
+        function typewriter(element, text) {
+            let index = 0;
+            const speed = 20;
+            const step = text.length > 500 ? 5 : 2;
+            
+            element.innerHTML = '';
+            
+            function type() {
+                if (index < text.length) {
+                    index += step;
+                    const currentText = text.substring(0, index);
+                    renderMarkdown(element, currentText + ' ▌');
+                    
+                    const chatBox = document.getElementById('chat-history');
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    
+                    setTimeout(type, speed);
+                } else {
+                    renderMarkdown(element, text);
+                }
+            }
+            type();
+        }
+
+        function removeMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // ==================== 知识库管理 ====================
+        async function loadKnowledgeBase() {
+            try {
+                const data = await window.AppConfig.apiRequest('KNOWLEDGE_LIST');
+                if (data.code === 200) {
+                    const list = document.getElementById('kb-list');
+                    list.innerHTML = '';
+                    
+                    if (data.data.length === 0) {
+                        list.innerHTML = '<div class="text-center text-muted" style="padding: 20px;">暂无知识记录</div>';
+                        return;
+                    }
+                    
+                    data.data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'kb-item';
+                        const safeTitle = item.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        div.innerHTML = `
+                            <div style="font-weight:bold; font-size:0.85rem;">${item.type==='public'?'🌐':'👤'} ${safeTitle}</div>
+                            <div style="font-size:0.75rem; color:var(--text-light);">${item.created_at}</div>
+                            <div class="kb-actions">
+                                <span class="kb-btn" onclick="viewKnowledge(${item.id})">查看</span>
+                                ${item.type === 'private' ? `<span class="kb-btn delete" onclick="deleteKnowledge(${item.id}, event)">删除</span>` : ''}
+                            </div>
+                        `;
+                        div.onclick = (e) => {
+                            if(e.target.classList.contains('kb-btn')) return;
+                            viewKnowledge(item.id);
+                        };
+                        list.appendChild(div);
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteKnowledge(id, event) {
+            if(event) event.stopPropagation();
+            if(!confirm("确定要删除这条笔记吗？")) return;
+            
+            try {
+                const data = await window.AppConfig.apiRequest('KNOWLEDGE_DELETE', id, { method: 'DELETE' });
+                if(data.code === 200) {
+                    loadKnowledgeBase();
+                } else {
+                    alert(data.msg);
+                }
+            } catch(e) { 
+                alert("删除失败"); 
+            }
+        }
+
+        async function viewKnowledge(id) {
+            try {
+                const data = await window.AppConfig.apiRequest('KNOWLEDGE_DETAIL', id);
+                if(data.code === 200) {
+                    const item = data.data;
+                    document.getElementById('kb-view-title').textContent = item.title;
+                    document.getElementById('kb-view-meta').textContent = `${item.type==='public'?'公共知识':'个人笔记'} · ${item.created_at}`;
+                    document.getElementById('kb-view-content').textContent = item.content;
+                    document.getElementById('kb-view-modal').classList.remove('hidden');
+                } else {
+                    alert(data.msg);
+                }
+            } catch(e) { 
+                alert("加载详情失败"); 
+            }
+        }
+
+        function closeKbViewModal() {
+            document.getElementById('kb-view-modal').classList.add('hidden');
+        }
+
+        function showAddKbModal() {
+            document.getElementById('kb-modal').classList.remove('hidden');
+        }
+
+        function closeKbModal() {
+            document.getElementById('kb-modal').classList.add('hidden');
+            document.getElementById('kb-title').value = '';
+            document.getElementById('kb-content').value = '';
+        }
+        
+        async function addKnowledge() {
+            const title = document.getElementById('kb-title').value;
+            const content = document.getElementById('kb-content').value;
+            if(!title || !content) {
+                alert("请填写完整");
+                return;
+            }
+            
+            try {
+                const data = await window.AppConfig.apiRequest('KNOWLEDGE_ADD', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, content })
+                });
+                if(data.code === 200) {
+                    closeKbModal();
+                    loadKnowledgeBase();
+                    alert("添加成功");
+                } else {
+                    alert(data.msg);
+                }
+            } catch(e) { 
+                alert("添加失败"); 
+            }
+        }
+    </script>
+</body>
+</html>

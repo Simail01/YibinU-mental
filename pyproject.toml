@@ -1,0 +1,94 @@
+[project]
+name = "yibinu"
+version = "1.0.0"
+description = "大学生心理健康智能分析系统"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "YibinU Team"}
+]
+keywords = ["mental-health", "ai", "psychology", "chatbot"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+    "pymysql>=1.1.0",
+    "DBUtils>=3.1.0",
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+    "sentence-transformers>=2.2.0",
+    "langchain>=0.1.0",
+    "langchain-community>=0.0.10",
+    "chromadb>=0.4.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "protobuf>=4.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "black>=23.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/example/yibinu"
+Documentation = "https://github.com/example/yibinu#readme"
+Repository = "https://github.com/example/yibinu"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src/main"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "W",
+    "UP",
+    "B",
+    "C4",
+]
+ignore = [
+    "E501",
+    "B008",
+]
+
+[tool.ruff.isort]
+known-first-party = ["config", "database", "model_loader", "rag_service"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

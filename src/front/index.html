@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大学生心理健康智能分析系统 - 首页</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-logo">YibinU 心理健康</div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link nav-link-active">首页</a>
+                <a href="advice.html" class="nav-link">智能分析</a>
+                <a href="scl90.html" class="nav-link">专业自评</a>
+                <button class="theme-toggle" id="theme-toggle" title="切换主题">🌓</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header class="text-center mb-4">
+            <h1 class="main-title">你好，我是你的心理健康助手</h1>
+            <p class="intro">
+                无论你此刻感到迷茫、焦虑还是疲惫，我们都在这里倾听并为你提供专业的支持与建议。
+                结合先进的 AI 技术与专业量表，守护你的心理健康。
+            </p>
+        </header>
+
+        <div class="features-grid">
+            <a href="advice.html" class="feature-card">
+                <span class="feature-icon">📝</span>
+                <h2 class="feature-name">智能文本分析</h2>
+                <p class="feature-desc">
+                    通过输入你的心理自述，利用 AI 深度分析情感倾向和潜在风险，并给出个性化的心理健康建议。
+                </p>
+                <div class="feature-btn">开启分析之旅 →</div>
+            </a>
+
+            <a href="scl90.html" class="feature-card">
+                <span class="feature-icon">📊</span>
+                <h2 class="feature-name">SCL-90 专业自评</h2>
+                <p class="feature-desc">
+                    使用国际通用症状清单，从躯体化、强迫、忧郁等多个维度全面评估状况，生成专业报告。
+                </p>
+                <div class="feature-btn">开始专业自测 →</div>
+            </a>
+        </div>
+
+        <div class="mt-4 text-section" style="margin-top: 60px;">
+            <h3 class="text-center mb-4" style="font-size: 1.5rem; font-weight: 700;">💡 心理健康小贴士</h3>
+            <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div class="feature-card" style="padding: 24px;">
+                    <h4 style="color: var(--primary); margin-bottom: 12px;">保持充足睡眠</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">规律的作息是心理健康的基石，确保每天 7-8 小时高质量睡眠。</p>
+                </div>
+                <div class="feature-card" style="padding: 24px;">
+                    <h4 style="color: var(--primary); margin-bottom: 12px;">适度运动</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">运动能释放内啡肽，有效缓解压力和焦虑，让心情更愉悦。</p>
+                </div>
+                <div class="feature-card" style="padding: 24px;">
+                    <h4 style="color: var(--primary); margin-bottom: 12px;">建立社交连接</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">与亲友倾诉感受，获得支持和理解，你并不孤单。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center" style="padding: 40px 0; color: var(--text-light); font-size: 0.9rem;">
+        <p>© 2026 大学生心理健康智能分析系统 | 守护你的每一份心绪</p>
+    </footer>
+
+    <script>
+        // 主题切换逻辑
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || 
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            body.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = body.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+    </script>
+</body>
+</html>

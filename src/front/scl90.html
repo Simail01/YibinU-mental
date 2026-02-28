@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCL-90 专业心理测评 - 大学生心理健康智能分析系统</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="uuid_manager.js"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-inner">
+            <div class="nav-logo">YibinU 心理健康</div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">首页</a>
+                <a href="advice.html" class="nav-link">智能分析</a>
+                <a href="scl90.html" class="nav-link nav-link-active">专业自评</a>
+                <button class="theme-toggle" id="theme-toggle" title="切换主题">🌓</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 开始页面 -->
+        <div id="start-screen" class="screen">
+            <header class="text-center mb-4">
+                <h1 class="main-title">SCL-90 症状自评量表</h1>
+                <p class="intro">
+                    SCL-90 是国际公认的心理健康评估工具，通过 90 个项目从多个维度全面了解您的心理状态。
+                    请根据您<strong>最近一周</strong>的实际感受进行填写。
+                </p>
+            </header>
+            
+            <form id="user-info-form" style="max-width: 500px; margin: 0 auto;">
+                <div class="form-group">
+                    <label for="nickname">您的昵称</label>
+                    <input type="text" id="nickname" required placeholder="请输入您的昵称">
+                </div>
+                
+                <div class="form-group">
+                    <label for="birthday-input">出生日期</label>
+                    <input type="text" id="birthday-input" required placeholder="点击选择日期" readonly>
+                    <input type="hidden" id="birthday" name="birthday">
+                </div>
+                
+                <div class="form-group">
+                    <label for="gender">您的性别</label>
+                    <select id="gender" required>
+                        <option value="">请选择性别</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn primary" style="width: 100%;">🚀 开始专业测评</button>
+                    <button type="button" id="view-history" class="btn secondary mt-4" style="width: 100%;">📜 查看往期数据</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 历史记录页面 -->
+        <div id="history-screen" class="screen hidden">
+             <header class="text-center mb-4">
+                <h1 class="main-title">往期测评记录</h1>
+                <button id="history-back-btn" class="btn secondary mb-4">← 返回</button>
+            </header>
+            <div class="history-list-container" style="max-width: 800px; margin: 0 auto;">
+                <table class="level-table">
+                    <thead>
+                        <tr>
+                            <th>测评时间</th>
+                            <th>总分</th>
+                            <th>均分</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <!-- 动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 测试页面 -->
+        <div id="test-screen" class="screen hidden">
+            <div class="progress-container mb-4">
+                <div class="progress-info mb-2">
+                    <span id="current-question" style="font-weight: 700; color: var(--primary);">第 1 题</span>
+                    <span id="remaining-questions" style="font-size: 0.85rem; color: var(--text-light);">剩余 89 题</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill" style="width: 1%;"></div>
+                </div>
+                <div class="timer mt-2 text-center" style="font-size: 0.9rem; color: var(--accent); font-weight: 600;">
+                    ⏱️ 剩余时间：<span id="time-left">45:00</span>
+                </div>
+            </div>
+            
+            <div class="text-section mt-4" style="min-height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <h2 id="question-text" style="text-align: center; font-size: 1.75rem; margin-bottom: 40px; color: var(--text-main);">加载中...</h2>
+                
+                <div class="options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; width: 100%; max-width: 800px;">
+                    <label class="option-pill">
+                        <input type="radio" name="answer" value="1" hidden>
+                        <span>没有</span>
+                    </label>
+                    <label class="option-pill">
+                        <input type="radio" name="answer" value="2" hidden>
+                        <span>很轻</span>
+                    </label>
+                    <label class="option-pill">
+                        <input type="radio" name="answer" value="3" hidden>
+                        <span>中等</span>
+                    </label>
+                    <label class="option-pill">
+                        <input type="radio" name="answer" value="4" hidden>
+                        <span>偏重</span>
+                    </label>
+                    <label class="option-pill">
+                        <input type="radio" name="answer" value="5" hidden>
+                        <span>严重</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="navigation mt-4" style="display: flex; justify-content: space-between; gap: 16px;">
+                <button id="prev-btn" class="btn secondary" disabled>← 上一题</button>
+                <button id="next-btn" class="btn primary">下一题 →</button>
+            </div>
+        </div>
+
+        <!-- 结果页面 -->
+        <div id="result-screen" class="screen hidden">
+            <div class="result-container">
+                <header class="text-center mb-4">
+                    <h1 class="main-title">测评分析报告</h1>
+                    <p class="text-muted">Symptom Checklist 90 (SCL-90)</p>
+                </header>
+                <div class="text-right mb-2 no-print">
+                     <button id="back-to-home" class="btn secondary small">🏠 返回首页</button>
+                </div>
+
+                <!-- 用户基本信息 -->
+                <div class="text-section">
+                    <h3 class="mb-4">👤 基本信息</h3>
+                    <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="info-card">
+                            <span class="text-light">姓名/昵称</span>
+                            <div id="result-nickname" class="font-bold">--</div>
+                        </div>
+                        <div class="info-card">
+                            <span class="text-light">性别/年龄</span>
+                            <div class="font-bold"><span id="result-gender">--</span> / <span id="result-age">--</span>岁</div>
+                        </div>
+                        <div class="info-card">
+                            <span class="text-light">测评用时</span>
+                            <div id="result-duration" class="font-bold">--</div>
+                        </div>
+                        <div class="info-card">
+                            <span class="text-light">测评时间</span>
+                            <div id="result-test-time" class="font-bold">--</div>
+                        </div>
+                        <div class="info-card">
+                            <span class="text-light">测评总分</span>
+                            <div id="score-total-display" class="font-bold">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 核心评分 -->
+                <div class="text-section mt-4">
+                    <h3 class="mb-4">📊 核心评分摘要</h3>
+                    <table class="level-table">
+                        <thead>
+                            <tr>
+                                <th>总分</th>
+                                <th>总均分</th>
+                                <th>阳性项目数</th>
+                                <th>状态评估</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="total-score" style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">--</td>
+                                <td id="average-score" style="font-size: 1.25rem; font-weight: 800;">--</td>
+                                <td id="positive-items" style="font-size: 1.25rem; font-weight: 800; color: var(--accent);">--</td>
+                                <td><span id="score-range" class="status-pill status-normal">--</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 维度细分 -->
+                <div class="text-section mt-4">
+                    <h3 class="mb-4">🔍 因子维度分析</h3>
+                    <table class="level-table" id="symptoms-table">
+                        <thead>
+                            <tr>
+                                <th>症状维度</th>
+                                <th>原始分</th>
+                                <th>因子均分</th>
+                                <th>风险提示</th>
+                            </tr>
+                        </thead>
+                        <tbody id="symptoms-tbody">
+                            <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                    <p class="mt-4" style="font-size: 0.85rem; color: var(--text-light); text-align: center;">
+                        * 因子均分 ≥ 2 分提示该维度存在一定程度的症状困扰。
+                    </p>
+                    <div id="factor-analysis" class="mt-4">
+                        <!-- 动态填充因子分析 -->
+                    </div>
+                </div>
+
+                <!-- 可视化图表 -->
+                <div class="text-section mt-4">
+                    <h3 class="mb-4">📈 心理画像</h3>
+                    <canvas id="result-chart" style="width: 100%; max-height: 400px;"></canvas>
+                </div>
+
+                <!-- 专家建议 -->
+                <div class="text-section mt-4" id="expert-advice">
+                    <h3 class="mb-4">💌 贴心建议</h3>
+                    <div id="personal-advice" style="line-height: 1.8; color: var(--text-main);">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 no-print">
+                    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                        <button id="download-pdf" class="btn primary">📥 下载 PDF 报告</button>
+                        <button id="download-image" class="btn secondary">🖼️ 保存结果图片</button>
+                        <button id="save-to-kb" class="btn secondary">💾 保存至知识库</button>
+                        <button id="back-to-history" class="btn secondary hidden">📜 返回列表</button>
+                        <button id="restart-test" class="btn secondary">↩️ 重新测评</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 生日选择模态窗 (重塑设计) -->
+    <div id="birthday-modal" class="modal">
+        <div class="modal-content screen" style="max-width: 400px; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0;">选择出生日期</h3>
+                <button class="modal-close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="date-picker">
+                <div class="date-picker-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button id="prev-year" class="btn secondary" style="min-width: auto; padding: 4px 12px;" title="上一年">&lt;&lt;</button>
+                        <button id="prev-month" class="btn secondary" style="min-width: auto; padding: 4px 12px;" title="上一月">&lt;</button>
+                    </div>
+                    <span id="current-month-year" style="font-weight: 700;"></span>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="next-month" class="btn secondary" style="min-width: auto; padding: 4px 12px;" title="下一月">&gt;</button>
+                        <button id="next-year" class="btn secondary" style="min-width: auto; padding: 4px 12px;" title="下一年">&gt;&gt;</button>
+                    </div>
+                </div>
+                <div id="calendar-days" class="calendar-days" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center;">
+                    <!-- 动态填充 -->
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+                <button id="cancel-birthday" class="btn secondary">取消</button>
+                <button id="confirm-birthday" class="btn primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 页面特定样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .calendar-days div {
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .calendar-days div:hover { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+        .calendar-days .selected { background: var(--primary); color: white; }
+        .calendar-days .today { color: var(--primary); font-weight: 800; text-decoration: underline; }
+        
+        .no-print { display: flex; }
+        @media print { .no-print { display: none !important; } .navbar { display: none; } .screen { box-shadow: none; border: none; } }
+    </style>
+
+    <script src="script.js"></script>
+</body>
+</html>
